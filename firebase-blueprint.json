@@ -1,0 +1,198 @@
+{
+  "entities": {
+    "GeneralCapital": {
+      "title": "General Capital",
+      "description": "Represents the total pool of capital for the application.",
+      "type": "object",
+      "properties": {
+        "available_amount": { "type": "number" },
+        "lent_amount": { "type": "number" },
+        "profit": { "type": "number" },
+        "uid": { "type": "string" }
+      },
+      "required": ["available_amount", "lent_amount", "profit", "uid"]
+    },
+    "Capital": {
+      "title": "Individual Balance",
+      "description": "Represents an individual's stake in the general capital.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "balance": { "type": "number" },
+        "uid": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "balance", "uid", "created_date"]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "Represents a loan given to a client.",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "amount": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly", "monthly"] },
+        "installmentsCount": { "type": "number" },
+        "installmentValue": { "type": "number" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "includeSundays": { "type": "boolean" },
+        "paymentDay": { "type": "number" },
+        "capitalId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed"] },
+        "uid": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientName", "amount", "totalAmount", "frequency", "installmentsCount", "installmentValue", "startDate", "capitalId", "uid", "created_date"]
+    },
+    "Installment": {
+      "title": "Installment",
+      "description": "A single installment of a loan.",
+      "type": "object",
+      "properties": {
+        "number": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue"] },
+        "paidDate": { "type": "string", "format": "date-time" },
+        "loanId": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["number", "dueDate", "amount", "status", "loanId", "uid"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Represents a client with profile and identification documents.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "profilePhotoUrl": { "type": "string" },
+        "photos": { "type": "array" },
+        "docRgUrl": { "type": "string" },
+        "docCpfUrl": { "type": "string" },
+        "docResidenceUrl": { "type": "string" },
+        "faceRegistered": { "type": "boolean" },
+        "address": { "type": "string" },
+        "addressNumber": { "type": "string" },
+        "neighborhood": { "type": "string" },
+        "city": { "type": "string" },
+        "mapsLink": { "type": "string" },
+        "uid": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "uid", "created_date"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents a user of the application.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "pin": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["email", "uid"]
+    },
+    "Withdrawal": {
+      "title": "Withdrawal",
+      "description": "Represents a capital withdrawal for non-loan purposes.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "capitalId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Alimentação", "Transporte", "Pessoal", "Emergência", "Outros"] },
+        "description": { "type": "string" },
+        "uid": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "date", "capitalId", "category", "uid", "created_date"]
+    },
+    "ClientFile": {
+      "title": "Client File",
+      "description": "Represents a document or file attached to a client.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Contrato", "RG", "CPF", "Comprovante de residência", "Outros"] },
+        "url": { "type": "string" },
+        "uploadDate": { "type": "string", "format": "date-time" },
+        "observation": { "type": "string" },
+        "category": { "type": "string", "enum": ["Contratos", "Documentos", "Outros"] },
+        "uid": { "type": "string" }
+      },
+      "required": ["type", "url", "uploadDate", "category", "uid"]
+    },
+    "AppContribution": {
+      "title": "App Contribution",
+      "description": "Represents a direct contribution to the app's general capital.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "uid": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "date", "uid", "created_date"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "Represents a system log entry.",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "userEmail": { "type": "string" },
+        "details": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["action", "date", "userEmail", "uid"]
+    }
+  },
+  "firestore": {
+    "/general_capital/{userId}": {
+      "schema": "GeneralCapital",
+      "description": "Global capital tracking for a user."
+    },
+    "/capitals/{capitalId}": {
+      "schema": "Capital",
+      "description": "Collection of individual balances."
+    },
+    "/loans/{loanId}": {
+      "schema": "Loan",
+      "description": "Collection of loans."
+    },
+    "/loans/{loanId}/installments/{installmentId}": {
+      "schema": "Installment",
+      "description": "Subcollection of installments for a specific loan."
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Collection of clients."
+    },
+    "/clients/{clientId}/files/{fileId}": {
+      "schema": "ClientFile",
+      "description": "Subcollection of files for a specific client."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "/withdrawals/{withdrawalId}": {
+      "schema": "Withdrawal",
+      "description": "Collection of capital withdrawals."
+    },
+    "/app_contributions/{contributionId}": {
+      "schema": "AppContribution",
+      "description": "Collection of direct app capital contributions."
+    },
+    "/logs/{logId}": {
+      "schema": "Log",
+      "description": "Collection of system logs."
+    }
+  }
+}

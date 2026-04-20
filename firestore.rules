@@ -1,0 +1,200 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: capitals
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required) - The name of the capital owner or fund.
+    //   - color: string (optional) - Hex color code.
+    //   - balance: number (required) - The current balance of the capital.
+    //   - uid: string (required) - The UID of the owner.
+    //   - created_date: string (required) - ISO 8601 date string.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidGeneralCapital(data) {
+      return data.available_amount is number &&
+             data.lent_amount is number &&
+             data.profit is number &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidCapital(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.balance is number &&
+             (!('color' in data) || (data.color is string && data.color.size() < 20)) &&
+             data.uid == request.auth.uid &&
+             isValidDateString(data.created_date);
+    }
+
+    function isValidClient(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 30)) &&
+             (!('email' in data) || (data.email is string && data.email.size() < 100)) &&
+             (!('cpf' in data) || (data.cpf is string && data.cpf.size() < 20)) &&
+             (!('observations' in data) || (data.observations is string && data.observations.size() < 1000)) &&
+             (!('profilePhotoUrl' in data) || (data.profilePhotoUrl is string && data.profilePhotoUrl.size() < 1000)) &&
+             (!('photos' in data) || data.photos is list) &&
+             (!('docRgUrl' in data) || (data.docRgUrl is string && data.docRgUrl.size() < 1000)) &&
+             (!('docCpfUrl' in data) || (data.docCpfUrl is string && data.docCpfUrl.size() < 1000)) &&
+             (!('docResidenceUrl' in data) || (data.docResidenceUrl is string && data.docResidenceUrl.size() < 1000)) &&
+             (!('faceRegistered' in data) || data.faceRegistered is bool) &&
+             (!('address' in data) || (data.address is string && data.address.size() < 200)) &&
+             (!('addressNumber' in data) || (data.addressNumber is string && data.addressNumber.size() < 20)) &&
+             (!('neighborhood' in data) || (data.neighborhood is string && data.neighborhood.size() < 100)) &&
+             (!('city' in data) || (data.city is string && data.city.size() < 100)) &&
+             (!('mapsLink' in data) || (data.mapsLink is string && data.mapsLink.size() < 1000)) &&
+             data.uid == request.auth.uid &&
+             isValidDateString(data.created_date);
+    }
+
+    function isValidWithdrawal(data) {
+      return data.amount is number && data.amount > 0 &&
+             isValidDateString(data.date) &&
+             data.capitalId is string &&
+             data.category in ["Alimentação", "Transporte", "Pessoal", "Emergência", "Outros"] &&
+             (!('description' in data) || (data.description is string && data.description.size() < 500)) &&
+             data.uid == request.auth.uid &&
+             isValidDateString(data.created_date);
+    }
+
+    function isValidClientFile(data) {
+      return data.type in ["Contrato", "RG", "CPF", "Comprovante de residência", "Outros"] &&
+             data.url is string && data.url.size() > 0 &&
+             isValidDateString(data.uploadDate) &&
+             data.category in ["Contratos", "Documentos", "Outros"] &&
+             (!('observation' in data) || (data.observation is string && data.observation.size() < 1000)) &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /general_capital/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidGeneralCapital(request.resource.data);
+      allow update: if isOwner(userId) && isValidGeneralCapital(request.resource.data);
+    }
+
+    match /capitals/{capitalId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      hasRequiredFields(['name', 'balance', 'uid', 'created_date']) &&
+                      isValidCapital(request.resource.data);
+      allow update: if isAuthenticated() && 
+                      isDocOwner() &&
+                      uidNotModified() &&
+                      isValidCapital(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /loans/{loanId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && isDocOwner() && uidNotModified();
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /{path=**}/installments/{installmentId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && uidNotModified();
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    match /clients/{clientId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      hasRequiredFields(['name', 'uid', 'created_date']) &&
+                      isValidClient(request.resource.data);
+      allow update: if isAuthenticated() && 
+                      isDocOwner() &&
+                      uidNotModified() &&
+                      isValidClient(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+
+      match /files/{fileId} {
+        allow read: if isAuthenticated() && get(/databases/$(database)/documents/clients/$(clientId)).data.uid == request.auth.uid;
+        allow create: if isAuthenticated() && 
+                        get(/databases/$(database)/documents/clients/$(clientId)).data.uid == request.auth.uid &&
+                        isValidClientFile(request.resource.data);
+        allow update: if isAuthenticated() && 
+                        get(/databases/$(database)/documents/clients/$(clientId)).data.uid == request.auth.uid &&
+                        isValidClientFile(request.resource.data);
+        allow delete: if isAuthenticated() && get(/databases/$(database)/documents/clients/$(clientId)).data.uid == request.auth.uid;
+      }
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) && uidNotModified();
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      hasRequiredFields(['amount', 'date', 'capitalId', 'category', 'uid', 'created_date']) &&
+                      isValidWithdrawal(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && uidNotModified() && isValidWithdrawal(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /app_contributions/{contributionId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      hasRequiredFields(['amount', 'date', 'uid', 'created_date']) &&
+                      request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && isDocOwner() && uidNotModified();
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /logs/{logId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      hasRequiredFields(['action', 'date', 'userEmail', 'uid']) &&
+                      request.resource.data.uid == request.auth.uid;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

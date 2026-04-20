@@ -1,0 +1,5 @@
+{
+  "name": "Capital Flow",
+  "description": "A professional financial management tool for tracking capital, loans, and profits.",
+  "requestFramePermissions": ["camera"]
+}
